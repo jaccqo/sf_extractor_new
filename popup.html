@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Busylight Controller</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .btn-custom {
+      width: 100%;
+      margin-top: 10px;
+     
+    }
+    h4 {
+      margin-bottom: 20px;
+      color: #343a40;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #343a40;
+    }
+    .custom-small-text {
+      font-size: 0.75rem; /* Adjust the size as needed */
+      font-weight: 300;   /* Light font weight */
+    }
+    
+  </style>
+</head>
+<body style="width:500px;" class="rounded">
+  <div class="container mt-3">
+    <h6 class="text-center">Busylight Controller</h6>
+    <div class="row">
+      <div class="col">
+        <button id="breakButton" class="btn btn-warning btn-custom">I need a break</button>
+      </div>
+      <div class="col">
+        <button id="invoiceButton" class="btn btn-primary btn-custom">I'm making an invoice</button>
+      </div>
+    </div>
+    <div id="status" class="text-center"></div>
+    <p class="text-right custom-small-text">v1.0</p>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
