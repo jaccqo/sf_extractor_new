@@ -16,9 +16,8 @@ function checkForOpportunityPage() {
 // Function to check for active call panels and manage status prioritization
 function checkStatusAndSend() {
     const currentUrl = window.location.href;
-    let statusSent = false; // Boolean to track if a status was sent
+    let statusSent = false;
 
-    // Check for active call panels (highest priority)
     const callPanels = document.querySelectorAll('div.voiceConnectedPanel.voiceCallHandlerContainer');
     if (callPanels.length > 0) {
         const callPanel = callPanels[callPanels.length - 1];
@@ -49,10 +48,9 @@ function checkStatusAndSend() {
             console.log("Response from background:", response.status);
         });
 
-        statusSent = true; // Mark that a status was sent
+        statusSent = true;
     }
 
-    // Check for Opportunity page (second priority) if no call is active
     if (!statusSent && checkForOpportunityPage()) {
         chrome.runtime.sendMessage({ 
             action: 'sendStatus', 
@@ -64,7 +62,6 @@ function checkStatusAndSend() {
         statusSent = true;
     }
 
-    // Send no_call (lowest priority) if no other status was sent
     if (!statusSent) {
         console.log("No call detected, and not on an Opportunity page.");
         chrome.runtime.sendMessage({ 
@@ -77,17 +74,65 @@ function checkStatusAndSend() {
     }
 }
 
+// Function to monitor Twilio logs in the console
+function monitorTwilioConsoleLogs() {
+    const originalConsoleLog = console.log;
+
+    console.log = function (...args) {
+        originalConsoleLog.apply(console, args);
+
+        for (let arg of args) {
+            if (typeof arg !== 'string') continue;
+
+            // Detect outgoing call initiation
+            if (arg.includes('[TwilioVoice][Device] .connect')) {
+                const match = arg.match(/{.*}/);
+                if (match) {
+                    try {
+                        const data = JSON.parse(match[0]);
+                        const to = data.params?.To;
+                        const caller = data.params?.Caller;
+                        if (to && caller) {
+                            console.info(`[Detected] Outgoing call from ${caller} to ${to}`);
+                            // Add custom logic here if needed
+                        }
+                    } catch (err) {
+                        originalConsoleLog('Error parsing connect payload:', err);
+                    }
+                }
+            }
+
+            // Detect outgoing call disconnection
+            else if (arg.includes('[TwilioVoice][EventPublisher]') && arg.includes('"name":"disconnected-by-local"')) {
+                const match = arg.match(/{.*}/);
+                if (match) {
+                    try {
+                        const data = JSON.parse(match[0]);
+                        const callSid = data.event?.payload?.call_sid;
+                        const direction = data.event?.payload?.direction;
+                        if (direction === 'OUTGOING') {
+                            console.info(`[Detected] Outgoing call disconnected (SID: ${callSid})`);
+                            // Add custom logic here if needed
+                        }
+                    } catch (err) {
+                        originalConsoleLog('Error parsing disconnect payload:', err);
+                    }
+                }
+            }
+        }
+    };
+}
+
+// Start monitoring when page loads
 window.addEventListener('load', () => {
     console.log("All resources finished loading.");
 
-    // Initial check
     try {
         checkStatusAndSend();
     } catch (error) {
         console.error("Error during initial status check:", error);
     }
 
-    // Observe for changes in the document
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.addedNodes.length || mutation.removedNodes.length) {
@@ -101,4 +146,7 @@ window.addEventListener('load', () => {
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
+
+    // Start Twilio log monitor
+    monitorTwilioConsoleLogs();
 });
