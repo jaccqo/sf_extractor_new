@@ -13,6 +13,73 @@ function checkForOpportunityPage() {
     }
 }
 
+
+
+// <div class="callDetails slds-truncate">
+//     <lightning-icon
+//         class="slds-p-right_xx-small nonMissed slds-icon-utility-incoming-call slds-icon_container"
+//         icon-name="utility:incoming_call"
+//         lwc-4897l11qtae-host=""><span
+//             lwc-4897l11qtae=""
+//             style="--sds-c-icon-color-background: var(--slds-c-icon-color-background, transparent)"
+//             part="boundary"><lightning-primitive-icon
+//                 lwc-4897l11qtae=""
+//                 exportparts="icon"
+//                 size="x-small"
+//                 variant=""
+//                 lwc-24ofe7jiu3a-host=""><svg
+//                     focusable="false"
+//                     aria-hidden="true"
+//                     viewBox="0 0 520 520"
+//                     part="icon"
+//                     lwc-24ofe7jiu3a=""
+//                     data-key="incoming_call"
+//                     class="slds-icon slds-icon-text-default slds-icon_x-small">
+//                     <g
+//                         lwc-24ofe7jiu3a="">
+//                         <path
+//                             d="M485 379l-61-49a40 40 0 00-48-1l-52 38c-6 5-15 4-21-2l-78-70-70-78c-6-6-6-14-2-21l38-52a40 40 0 00-1-48l-49-61a40 40 0 00-59-3L30 84c-8 8-12 19-12 30 5 102 51 199 119 267s165 114 267 119c11 1 22-4 30-12l52-52a36 36 0 00-1-57zM296 240h154c10 0 13-11 5-19l-49-50 90-91c5-5 5-14 0-19l-37-37c-5-5-13-5-19 0l-91 91-51-49c-7-9-18-6-18 4v153c0 7 9 17 16 17z"
+//                             lwc-24ofe7jiu3a="">
+//                         </path>
+//                     </g>
+//                 </svg></lightning-primitive-icon><span
+//                 class="slds-assistive-text"
+//                 lwc-4897l11qtae="">Incoming</span></span></lightning-icon>&nbsp;+1
+//     (862)
+//     236-9655&nbsp;•&nbsp;a
+//     few
+//     seconds
+//     ago&nbsp;
+// </div>
+
+
+function getIncomingCallDetails() {
+    // Find all divs with both classes, use the first one
+    const callDetailsElements = document.querySelectorAll('div.callDetails.slds-truncate');
+    if (callDetailsElements.length > 0) {
+        const callDetailsElement = callDetailsElements[0];
+        // Extract phone number
+        const phoneNumberMatch = callDetailsElement.textContent.match(/\+1\s*\(\d{3}\)\s*\d{3}-\d{4}/);
+        // Extract time ago (e.g., "a few seconds ago", "2 minutes ago")
+        const timeAgoMatch = callDetailsElement.textContent.match(/(\d+\s+\w+\s+ago|a few seconds ago)/i);
+        // Extract call direction (e.g., "Incoming", "Outgoing") from assistive text
+        const directionElement = callDetailsElement.querySelector('.slds-assistive-text');
+        const direction = directionElement ? directionElement.textContent.trim() : null;
+
+        console.log("incoming call found")
+
+        const details = {
+            phone: phoneNumberMatch ? phoneNumberMatch[0] : null,
+            timeAgo: timeAgoMatch ? timeAgoMatch[0] : null,
+            direction: direction
+        };
+        console.log("Incoming call details:", details);
+        return details;
+    }
+    return null;
+}
+
+
 // Function to check for call status and send appropriate message
 function checkStatusAndSend() {
     const currentUrl = window.location.href;
@@ -120,6 +187,8 @@ window.addEventListener('load', () => {
             if (mutation.addedNodes.length || mutation.removedNodes.length) {
                 try {
                     checkStatusAndSend();
+                    getIncomingCallDetails();
+
                 } catch (error) {
                     console.error("Error checking status on mutation:", error);
                 }
