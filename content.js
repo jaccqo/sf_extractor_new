@@ -52,20 +52,12 @@ function checkForOpportunityPage() {
 //     ago&nbsp;
 // </div>
 
-
+// Function to find the "Answer" button and, if present, get phone details
 function getIncomingCallDetails() {
-    // First, look for the .slds-media__body with a child h2.panelTitle containing "Incoming"
-    const mediaBodies = document.querySelectorAll('div.slds-media__body');
-    let foundIncoming = false;
-    for (const body of mediaBodies) {
-        const h2 = body.querySelector('h2.panelTitle.slds-truncate');
-        if (h2 && h2.textContent.trim() === "Incoming") {
-            foundIncoming = true;
-            break;
-        }
-    }
-    if (!foundIncoming) {
-        // No incoming panel found, do not proceed
+    // Look for the "Answer" button
+    const answerButton = document.querySelector('button.slds-button.answer');
+    if (!answerButton) {
+        // No answer button found, do not proceed
         return null;
     }
 
@@ -81,7 +73,7 @@ function getIncomingCallDetails() {
         const directionElement = callDetailsElement.querySelector('.slds-assistive-text');
         const direction = directionElement ? directionElement.textContent.trim() : null;
 
-        console.log("incoming call found");
+        console.log("Answer button found, incoming call details:");
 
         const details = {
             phone: phoneNumberMatch ? phoneNumberMatch[0] : null,
