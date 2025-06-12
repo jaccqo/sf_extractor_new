@@ -61,28 +61,26 @@ function getIncomingCallDetails() {
         return null;
     }
 
-    // Now, find all divs with both classes, use the first one
-    const callDetailsElements = document.querySelectorAll('div.callDetails.slds-truncate');
-    if (callDetailsElements.length > 0) {
-        const callDetailsElement = callDetailsElements[0];
-        // Extract phone number
-        const phoneNumberMatch = callDetailsElement.textContent.match(/\+1\s*\(\d{3}\)\s*\d{3}-\d{4}/);
-        // Extract time ago (e.g., "a few seconds ago", "2 minutes ago")
-        const timeAgoMatch = callDetailsElement.textContent.match(/(\d+\s+\w+\s+ago|a few seconds ago)/i);
-        // Extract call direction (e.g., "Incoming", "Outgoing") from assistive text
-        const directionElement = callDetailsElement.querySelector('.slds-assistive-text');
-        const direction = directionElement ? directionElement.textContent.trim() : null;
+    // Now look for the phone number in the voiceIncomingPanel
+    const dialStatus = document.querySelector('.dialstatus');
+    if (dialStatus) {
+        const countryCodeElement = dialStatus.querySelector('.uiOutputText.voiceOutputPhone');
+        const phoneNumberElement = dialStatus.querySelector('.uiOutputPhone.voiceOutputPhone');
+
+        const phone = `${countryCodeElement?.textContent.trim() || ''}${phoneNumberElement?.textContent.trim() || ''}`;
 
         console.log("Answer button found, incoming call details:");
 
         const details = {
-            phone: phoneNumberMatch ? phoneNumberMatch[0] : null,
-            timeAgo: timeAgoMatch ? timeAgoMatch[0] : null,
-            direction: direction
+            phone: phone || null,
+            timeAgo: null, // You can add logic to extract this if available
+            direction: 'Incoming' // Assuming it's incoming due to context
         };
+
         console.log("Incoming call details:", details);
         return details;
     }
+
     return null;
 }
 
