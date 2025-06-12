@@ -11,14 +11,7 @@ window.addEventListener('load', () => {
   // Event listener for the "I need a break" button
   document.getElementById('breakButton').addEventListener('click', () => {
       chrome.runtime.sendMessage({ action: 'sendStatus', status: 'break' }, response => {
-          console.log(response.status);
-      });
-  });
-
-  // Event listener for the "I'm making an invoice" button
-  document.getElementById('invoiceButton').addEventListener('click', () => {
-      chrome.runtime.sendMessage({ action: 'sendStatus', status: 'invoice' }, response => {
-          console.log(response.status);
+          console.log('Break status response:', response?.status || 'No response');
       });
   });
 
@@ -29,16 +22,10 @@ window.addEventListener('load', () => {
 
           if (currentStatus === "Break") {
               document.getElementById('breakButton').innerText = "On Break";
-              document.getElementById('invoiceButton').innerText = "I'm making an invoice";
-          } else if (currentStatus === "Invoice") {
-              document.getElementById('breakButton').innerText = "I need a break";
-              document.getElementById('invoiceButton').innerText = "Creating Invoice";
           } else if (currentStatus === "countdown_completed") {
               document.getElementById('breakButton').innerText = "I need a break";
-              document.getElementById('invoiceButton').innerText = "I'm making an invoice";
           } else {
               document.getElementById('breakButton').innerText = "I need a break";
-              document.getElementById('invoiceButton').innerText = "I'm making an invoice";
           }
 
           updateStatus(message.minutes, message.seconds);

@@ -13,47 +13,46 @@ function checkForOpportunityPage() {
     }
 }
 
-
-
-// Function to find the "Answer" button and, if present, get phone details
+// Function to find the "Answer" button and get phone details
 function getIncomingCallDetails() {
-    // Look for the "Answer" button
     const answerButton = document.querySelector('button.slds-button.answer');
     if (!answerButton) {
-        // No answer button found, do not proceed
+        console.log("No 'Answer' button found for incoming call.");
         return null;
     }
 
-    // Now look for the phone number in the voiceIncomingPanel
     const dialStatus = document.querySelector('.dialstatus');
-    if (dialStatus) {
-        const countryCodeElement = dialStatus.querySelector('.uiOutputText.voiceOutputPhone');
-        const phoneNumberElement = dialStatus.querySelector('.uiOutputPhone.voiceOutputPhone');
-
-        const phone = `${countryCodeElement?.textContent.trim() || ''}${phoneNumberElement?.textContent.trim() || ''}`;
-
-        console.log("Answer button found, incoming call details:");
-
-        const details = {
-            phone: phone || null,
-            timeAgo: null, // You can add logic to extract this if available
-            direction: 'Incoming' // Assuming it's incoming due to context
-        };
-
-        console.log("Incoming call details:", details);
-        return details;
+    if (!dialStatus) {
+        console.log("No '.dialstatus' element found for incoming call.");
+        return null;
     }
 
-    return null;
-}
+    const countryCodeElement = dialStatus.querySelector('.uiOutputText.voiceOutputPhone');
+    const phoneNumberElement = dialStatus.querySelector('.uiOutputPhone.voiceOutputPhone');
 
+    if (!countryCodeElement && !phoneNumberElement) {
+        console.log("No phone number elements found in '.dialstatus'.");
+        return null;
+    }
+
+    const phone = `${countryCodeElement?.textContent.trim() || ''}${phoneNumberElement?.textContent.trim() || ''}`;
+
+    const details = {
+        phone: phone || null,
+        timeAgo: null, // Add logic to extract this if available
+        direction: 'Incoming'
+    };
+
+    console.log("Incoming call details:", details);
+    return details;
+}
 
 // Function to check for call status and send appropriate message
 function checkStatusAndSend() {
     const currentUrl = window.location.href;
     let statusSent = false;
 
-    // Priority 1: Incoming Call (from getIncomingCallDetails)
+    // Priority 1: Incoming Call
     const incomingCallDetails = getIncomingCallDetails();
     if (incomingCallDetails) {
         console.log("Incoming call detected, sending details to background.");
@@ -66,7 +65,7 @@ function checkStatusAndSend() {
                 timestamp: Date.now()
             }
         }, response => {
-            console.log("Response from background:", response?.status);
+            console.log("Background response for incoming_call:", response?.status || 'No response');
         });
         statusSent = true;
         return;
@@ -76,20 +75,16 @@ function checkStatusAndSend() {
     const callPanels = document.querySelectorAll('div.voiceConnectedPanel.voiceCallHandlerContainer');
     if (callPanels.length > 0) {
         const callPanel = callPanels[callPanels.length - 1];
-        console.log("Call in progress detected within the specific panel.");
+        console.log("Call in progress detected.");
 
         const companyNameElement = callPanel.querySelector('div.highlightsH1 span.uiOutputText');
         const personNameElement = callPanel.querySelector('div.field span.uiOutputText.forceOutputLookup');
         const phoneNumberElement = callPanel.querySelector('div.openctiOutputPhone span.uiOutputPhone');
 
-        const companyName = companyNameElement ? companyNameElement.innerText : 'Unknown Company';
-        const personName = personNameElement ? personNameElement.innerText : 'Unknown Person';
-        const phoneNumber = phoneNumberElement ? phoneNumberElement.innerText : 'Unknown Number';
-
         const callDetails = {
-            company: companyName,
-            person: personName,
-            phone: phoneNumber,
+            company: companyNameElement?.innerText || 'Unknown Company',
+            person: personNameElement?.innerText || 'Unknown Person',
+            phone: phoneNumberElement?.innerText || 'Unknown Number',
             url: currentUrl
         };
 
@@ -100,7 +95,7 @@ function checkStatusAndSend() {
             status: 'call_in_progress',
             details: callDetails
         }, response => {
-            console.log("Response from background:", response?.status);
+            console.log("Background response for call_in_progress:", response?.status || 'No response');
         });
 
         statusSent = true;
@@ -117,7 +112,7 @@ function checkStatusAndSend() {
                 const phoneAnchor = panel.querySelector('a[href^="tel:"]');
                 const phoneNumber = phoneAnchor ? phoneAnchor.getAttribute('href').replace('tel:', '') : 'Unknown';
 
-                console.info(`[Detected] Dialing phone number: ${phoneNumber}`);
+                console.log(`Dialing detected: ${phoneNumber}`);
 
                 chrome.runtime.sendMessage({
                     action: 'sendStatus',
@@ -128,23 +123,26 @@ function checkStatusAndSend() {
                         timestamp: Date.now()
                     }
                 }, response => {
-                    console.log("Response from background:", response?.status);
+                    console.log("Background response for call_dialing:", response?.status || 'No response');
                 });
 
                 statusSent = true;
-                return; // Exit after handling first valid match
+                return;
+            } else {
+                console.log("No '.voiceCompactRecord' panel found for dialing state.");
             }
         }
     }
 
     // Priority 4: Opportunity Page
     if (checkForOpportunityPage()) {
+        console.log("Sending opportunity page status.");
         chrome.runtime.sendMessage({
             action: 'sendStatus',
             status: 'on_opportunity_page',
             details: { url: currentUrl }
         }, response => {
-            console.log("Response from background:", response?.status);
+            console.log("Background response for on_opportunity_page:", response?.status || 'No response');
         });
 
         statusSent = true;
@@ -158,33 +156,38 @@ function checkStatusAndSend() {
         status: 'no_call',
         details: { url: currentUrl }
     }, response => {
-        console.log("Response from background:", response?.status);
+        console.log("Background response for no_call:", response?.status || 'No response');
     });
+}
+
+// Debounce function to limit MutationObserver calls
+let debounceTimeout;
+function debounceCheckStatusAndSend() {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => {
+        try {
+            checkStatusAndSend();
+        } catch (error) {
+            console.error("Error checking status on mutation:", error);
+        }
+    }, 100); // 100ms debounce
 }
 
 // Start monitoring when page loads
 window.addEventListener('load', () => {
-    console.log("All resources finished loading.");
+    console.log("Page fully loaded.");
 
-    // Initial status check
     try {
         checkStatusAndSend();
     } catch (error) {
         console.error("Error during initial status check:", error);
     }
 
-    // Observe DOM changes to re-check status when UI updates
+    // Observe DOM changes with debouncing
     const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.addedNodes.length || mutation.removedNodes.length) {
-                try {
-                    checkStatusAndSend();
-
-                } catch (error) {
-                    console.error("Error checking status on mutation:", error);
-                }
-            }
-        });
+        if (mutations.some(m => m.addedNodes.length || m.removedNodes.length)) {
+            debounceCheckStatusAndSend();
+        }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
